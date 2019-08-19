@@ -1,0 +1,45 @@
+---
+# tasks file for check_fstab_mount
+- name: Gather Facts the hostname/fqdn
+  setup:
+    filter: ansible_fqdn    
+
+- name: Fetch the current system timestamp
+  set_fact:
+    fetch_timestamp: "{{ lookup('pipe', 'date --utc +%Y%m%dT%H%M%S') }}"
+
+- name: Run 'mount -a' for checking the /etc/fstab mount points
+  shell: 'mount -a'
+  register: mount_results
+  ignore_errors: yes
+
+- name: Print 'mount -a' results
+  debug:
+    msg: "{{ mount_results.stderr_lines }}"
+
+- name: Create the results folder {{ output_path }}/{{ fetch_timestamp }}
+  local_action:
+    module: file
+    state: directory
+    path: "{{ output_path }}/{{fetch_timestamp}}"
+  run_once: yes
+
+- name: Create the results overview {{ output_path }}/{{ fetch_timestamp }}
+  local_action:
+    module: file
+    state: touch
+    path: "{{ output_path }}/{{ fetch_timestamp }}/overview.txt"
+  run_once: yes
+
+- name: Generate the overview results for {{ output_path }}/{{ fetch_timestamp }}
+  local_action:
+    module: lineinfile
+    dest: "{{ output_path }}/{{ fetch_timestamp }}/overview.txt"
+    line: "{% for key,value in mount_rc.items() %}{% if key == mount_results.rc %}{{ ansible_fqdn }} {{ value }}{% endif %}{% endfor %}"
+
+- name: Generate the mount results for {{ output_path }}/{{ fetch_timestamp }}
+  local_action:
+    module: copy
+    content: "{{ mount_results.stderr }}"
+    dest: "{{ output_path }}/{{ fetch_timestamp }}/{{ ansible_fqdn }}.txt"
+  when: mount_results.stderr != ''

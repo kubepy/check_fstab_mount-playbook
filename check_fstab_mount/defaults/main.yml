@@ -1,0 +1,12 @@
+---
+# defaults file for check_fstab_mount
+output_path: .
+mount_rc:
+  0: "success"
+  1: "incorrect invocation or permissions"
+  2: "system error (out of memory, cannot fork, no more loop devices)"
+  4: "internal mount bug"
+  8: "user interrupt"
+  16: "problems writing or locking /etc/mtab"
+  32: "mount failure"
+  64: "some mount succeeded"
